@@ -1,0 +1,218 @@
+import React, { Component } from 'react';
+import moment from 'moment';
+import {View, FlatList, Text, RefreshControl, Dimensions} from 'react-native';
+import Icon from 'react-native-vector-icons/MaterialIcons';
+import styles from './styles';
+import cfg from './const';
+
+let {width, height} = Dimensions.get('window');
+
+export default class Profile extends Component {
+  constructor(props) {
+    super(props);
+    this.state = {
+        refreshing: false,
+        isLoreMoreing: 'LoreMoreing',
+        dataSource: [],
+    };
+    this.responseData = [];
+    // 在ES6中，如果在自定义的函数里使用了this关键字，则需要对其进行“绑定”操作，否则this的指向会变为空
+    // 像下面这行代码一样，在constructor中使用bind是其中一种做法（还有一些其他做法，如使用箭头函数等）
+    // this.fetchData = this.fetchData.bind(this);
+  }
+
+  componentDidMount() {
+    this.fetchData(0, 10);
+  }
+
+  fetchData(index, page) {
+      fetch(cfg.DOMAIN+"record/list", {
+        method:"POST",
+        headers:{
+          Accept:"application/json",
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          uid:1001,
+          index:index,
+          page:page
+        })
+      })
+      .then(response => response.json())
+      .then(responseData => {
+        // 注意，这里使用了this关键字，为了保证this在调用时仍然指向当前组件，我们需要对其进行“绑定”操作
+        this.setState({
+          dataSource: this.state.dataSource.concat(responseData),
+          loaded: true
+        });
+      });
+  }
+
+  _refresh = ()=> {
+    this.setState({
+        refreshing: true,
+    });
+    setTimeout(() => {
+        //默认选中第二个
+        this.responseData = this.fetchData(0, 10);
+        this.setState({
+            refreshing: false,
+            dataSource: this.responseData
+        });
+        this.isLoreMore = false;
+    }, 3000);
+  }
+
+  isLoreMore = false;
+  loreMoreIndex=10;
+  page=10;
+  _loreMore = ()=> {
+    if (this.isLoreMore == false) {
+      this.setState({
+          isLoreMoreing: 'LoreMoreing',
+      });
+      this.isLoreMore = true;
+      this.responseData = this.responseData.concat(this.fetchData(this.loreMoreIndex, this.page));
+      setTimeout(() => {
+        this.setState({
+            dataSource: this.responseData,
+        })
+      }, 500);
+      setTimeout(() => {
+        this.setState({
+            isLoreMoreing: 'LoreMoreEmpty'
+        })
+      }, 500);
+    }
+  };
+
+  render() {
+    return (
+      <View style={{flex: 1}}>
+          <View style={{
+              marginTop: 20,
+              height: 44,
+              width: width,
+              justifyContent: 'center',
+              backgroundColor: 'gray',
+              alignItems: 'center',
+              flexDirection: 'row'
+          }}>
+            <Text onPress={this._refresh}>{'点击刷新     '}</Text>
+            <Text onPress={()=> {
+                this._flatList.scrollToIndex({viewPosition: 0, index: 4})
+            }}>{'点击滚动到第4个'}</Text>
+          </View>
+          <FlatList
+              showsVerticalScrollIndicator={false}//是否显示垂直滚动条
+              showsHorizontalScrollIndicator={false}//是否显示水平滚动条
+              numColumns={1}//每行显示1个
+              ref={(flatList)=>this._flatList = flatList}
+              ListHeaderComponent={this.renderHeader}//头部
+              ListFooterComponent={this.renderFooter}//尾巴
+              renderItem={this.renderRow}//每行显示一项
+              ItemSeparatorComponent={this.renderSeparator}//每行底部---一般写下划线
+              enableEmptySections={true}//数据可以为空
+              keyExtractor={item => item.id+""}
+              onEndReachedThreshold={0.1}//执行上啦的时候10%执行
+              onEndReached={this._loreMore}
+              data={this.state.dataSource}
+              refreshControl={
+                <RefreshControl
+                    refreshing={this.state.refreshing}
+                    onRefresh={this._refresh}
+                    title="Loading..."/>
+              }
+          />
+      </View>
+      
+    );
+  }
+
+  renderLoadingView() {
+    return (
+      <View style={styles.container}>
+        <Text>Loading records...</Text>
+      </View>
+    );
+  }
+
+  renderRow({ item }) {
+    // { item }是一种“解构”写法，请阅读ES2015语法的相关文档
+    // item也是FlatList中固定的参数名，请阅读FlatList的相关文档
+    return (
+      <View style={styles.container}>
+        <Icon name={this.getActionName(item.action)} style={styles.thumbnail}/>
+        <View style={styles.rightContainer}>
+          <Text style={styles.title}>{item.action}</Text>
+          <Text style={styles.time}>{moment(item.time).format("YYYY-MM-DD HH:mm:ss")}</Text>
+        </View>
+      </View>
+    );
+  }
+
+  renderSeparator = ()=> {
+      return (
+          <View style={{height: 1, backgroundColor: 'rgb(200,200,200)',}}/>
+      )
+  };
+
+  renderHeader = ()=> {
+      return (
+          <View style={{
+              height: 44,
+              width: width,
+              justifyContent: 'center',
+              backgroundColor: 'red',
+              alignItems: 'center'
+          }} activeOpacity={1}>
+              <Text>{'我是头部'}</Text>
+          </View>
+      )
+  };
+  renderFooter = ()=> {
+    if (this.state.dataSource.length != 0 && this.state.isLoreMoreing == 'LoreMoreing') {
+        return (
+            <View style={{
+                height: 44,
+                backgroundColor: 'rgb(200,200,200)',
+                justifyContent: 'center',
+                alignItems: 'center'
+            }}>
+                <Text>{'正在加载....'}</Text>
+            </View>
+        )
+    } else if (this.state.isLoreMoreing == 'LoreMoreEmpty') {
+        return (
+            <View style={{
+                height: 44,
+                backgroundColor: 'rgb(200,200,200)',
+                justifyContent: 'center',
+                alignItems: 'center'
+            }}>
+                <Text> {'暂无更多'}</Text>
+            </View>
+        )
+    } else {
+        return null
+    }
+  };
+
+  static getActionName(action) {
+    switch (action) {
+      case "拉粑粑了":
+        return "airline-seat-legroom-reduced";
+      case "尿哗哗了":
+        return "pool";
+      case "吃饭了":
+        return "local-dining";
+      case "喝水了":
+        return "local-cafe";
+      case "睡觉了":
+        return "local-hotel";
+      default :
+        return "all-inclusive";
+    }
+  }
+
+}
