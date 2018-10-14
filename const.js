@@ -1,6 +1,6 @@
 
 const cfg = {
-    DOMAIN : "http://192.168.1.105:8800/"
+    DOMAIN : "http://10.2.138.249:8800/"
 };
 
 export default cfg;
