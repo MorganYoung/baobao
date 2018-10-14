@@ -12,6 +12,7 @@
     "react-native": "0.56.0",
     "react-native-action-button": "^2.8.5",
     "react-native-refresh-list-view": "^1.0.10",
+    "react-native-router-flux": "^4.0.5",
     "react-native-tab-navigator": "^0.3.4",
     "react-native-vector-icons": "^4.6.0",
     "react-navigation": "^2.17.0"

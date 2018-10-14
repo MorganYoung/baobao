@@ -222,3 +222,16 @@ export default class Profile extends Component {
         );
     }
 }
+
+
+<View style={styles.container}>
+        <TouchableOpacity
+          onPress={this._onPress}
+          style={styles.button}
+          activeOpacity={1}>
+          <Image style={styles.image} source={arrowImg} />
+        </TouchableOpacity>
+        <Animated.View
+          style={[styles.circle, {transform: [{scale: changeScale}]}]}
+        />
+      </View>
